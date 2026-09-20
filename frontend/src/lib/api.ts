@@ -15,11 +15,24 @@ export type Location = {
 
 export type LogEntry = { message: string; location: string | null };
 
+export type OutcomeLine = { label: string; value: string };
+
+export type ReportResult = {
+  finding_id: string;
+  supported: boolean;
+  submitted_evidence: string[];
+  missing_evidence: string[];
+  message: string;
+  outcome: OutcomeLine[];
+};
+
 export type MissionState = {
   discovered_evidence: string[];
   completed_tasks: string[];
   event_log: LogEntry[];
   reactor_decision: string | null;
+  report_available: boolean;
+  final_report: ReportResult | null;
   mission_complete: boolean;
 };
 
@@ -56,6 +69,10 @@ export type CaseData = {
     lifeboats: Record<string, string>;
   };
   objectives: { id: string; text: string }[];
+  final_finding: {
+    question: string;
+    choices: { id: string; text: string }[];
+  };
   locations: Location[];
   non_playable_areas: {
     id: string;
@@ -120,4 +137,13 @@ export const sendCommand = (command: string) =>
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ command }),
+  });
+
+export type ReportResponse = ReportResult & { state: MissionState };
+
+export const submitReport = (finding_id: string, evidence_ids: string[]) =>
+  request<ReportResponse>("/report", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ finding_id, evidence_ids }),
   });

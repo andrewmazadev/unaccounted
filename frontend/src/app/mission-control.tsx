@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import FinalFinding from "./final-finding";
 import {
   investigate,
   resetCase,
@@ -12,6 +13,8 @@ import {
 } from "@/lib/api";
 
 const label = "font-mono text-[11px] uppercase tracking-[0.25em] text-zinc-500";
+
+const SYSTEM_LOCATIONS: Record<string, string> = { final_report: "Final report" };
 
 const ROLE_TAG: Record<InterpretedTask["role"], string> = {
   engineering: "ENG",
@@ -35,6 +38,7 @@ export default function MissionControl({
     () => Object.fromEntries(initialEvidence.map((e) => [e.id, e])),
   );
   const [selectedId, setSelectedId] = useState("engineering");
+  const [epoch, setEpoch] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [command, setCommand] = useState("");
@@ -45,7 +49,10 @@ export default function MissionControl({
   );
 
   const locationName = (id: string | null) =>
-    data.locations.find((l) => l.id === id)?.name ?? id ?? "SYSTEM";
+    data.locations.find((l) => l.id === id)?.name ??
+    (id && SYSTEM_LOCATIONS[id]) ??
+    id ??
+    "SYSTEM";
   const selected =
     data.locations.find((l) => l.id === selectedId) ?? data.locations[0];
   const allActions = data.locations.flatMap((l) => l.actions);
@@ -82,6 +89,7 @@ export default function MissionControl({
     run(resetCase, (s) => {
       setState(s);
       setEvidenceById({});
+      setEpoch((n) => n + 1);
       setInterpretation(null);
       setCommandError(null);
     });
@@ -244,6 +252,14 @@ export default function MissionControl({
               Core investigation evidence recovered
             </p>
           )}
+
+          <FinalFinding
+            key={epoch}
+            finding={data.final_finding}
+            state={state}
+            evidence={recovered}
+            onState={setState}
+          />
 
           <section aria-label="Command SIG team" className="mt-auto pt-12">
             {interpretation && (

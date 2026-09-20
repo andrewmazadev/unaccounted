@@ -101,5 +101,59 @@
       "reliability": "Verified",
       "finding": "27 personnel were verified aboard three lifeboats.\n\nLifeboat 01: 9\nLifeboat 02: 9\nLifeboat 03: 9\n\nAll three successfully separated from Petrel. Initial course changes were confirmed.\n\nThis establishes that all registered personnel left Petrel alive. It does NOT establish their later fate."
     }
+  },
+  "final_finding": {
+    "question": "Why was Petrel abandoned?",
+    "unlock_evidence": [
+      "E-02",
+      "E-03"
+    ],
+    "outcome": [
+      {
+        "label": "{crew_registered} registered personnel",
+        "value": "Evacuation confirmed"
+      },
+      {
+        "label": "Subsequent status",
+        "value": "Unknown"
+      },
+      {
+        "label": "Case 037 investigation",
+        "value": "Primary finding established"
+      }
+    ],
+    "findings": {
+      "evacuation_due_to_projected_debris": {
+        "choice_text": "Petrel was evacuated after loss of propulsion left it unable to avoid a second projected high-density debris concentration.",
+        "display_text": "Petrel was evacuated after loss of propulsion left the vessel unable to avoid a second projected high-density debris concentration. Repair and reactor restoration could not be completed with an acceptable safety margin before the safe evacuation window closed.",
+        "canonical": true,
+        "required_evidence": [
+          "E-02",
+          "E-03"
+        ],
+        "supporting_evidence": [
+          "E-01",
+          "E-06"
+        ],
+        "supported_message": "Recovered evidence supports the determination that Petrel was evacuated after propulsion loss left the vessel unable to avoid a second projected debris concentration.",
+        "insufficient_message": "Conclusion is plausible, but the submitted evidence does not establish the abandonment decision."
+      },
+      "sabotage": {
+        "choice_text": "Deliberate sabotage disabled Petrel and forced the crew to abandon ship.",
+        "display_text": "Deliberate sabotage disabled Petrel and forced the crew to abandon ship.",
+        "canonical": false,
+        "required_evidence": [],
+        "supporting_evidence": [],
+        "unsupported_message": "Recovered evidence does not establish deliberate sabotage as the cause of Petrel's abandonment."
+      },
+      "catastrophic_decompression": {
+        "choice_text": "Catastrophic decompression made Petrel uninhabitable and forced abandonment.",
+        "display_text": "Petrel was abandoned after catastrophic decompression made the vessel uninhabitable.",
+        "canonical": false,
+        "required_evidence": [],
+        "supporting_evidence": [],
+        "unsupported_message": "Recovered chronology does not support catastrophic decompression as the reason Petrel was abandoned."
+      }
+    }
   }
 }

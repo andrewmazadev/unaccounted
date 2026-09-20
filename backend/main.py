@@ -12,6 +12,8 @@ from models import (
     InvestigateRequest,
     InvestigateResponse,
     MissionState,
+    ReportRequest,
+    ReportResponse,
 )
 
 # The interpreter's action enum must stay in lockstep with the game's actions.
@@ -113,6 +115,16 @@ def command(req: CommandRequest):
         evidence=evidence,
         state=game.state,
     )
+
+
+@app.post("/report", response_model=ReportResponse)
+def report(req: ReportRequest):
+    """Submit the final incident finding. Deterministic; no AI involved."""
+    try:
+        result = game.submit_report(req.finding_id, req.evidence_ids)
+    except game.ReportError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    return ReportResponse(**result.model_dump(), state=game.state)
 
 
 @app.post("/reset", response_model=MissionState)
