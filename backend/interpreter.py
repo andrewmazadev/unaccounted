@@ -10,15 +10,17 @@ import os
 from pathlib import Path
 from typing import Literal
 
+import ollama
 from dotenv import load_dotenv
-from openai import OpenAI
 from pydantic import BaseModel, ValidationError, field_validator
 
 load_dotenv(Path(__file__).parent / ".env")
 
 logger = logging.getLogger(__name__)
 
-MODEL = "gpt-5.6-luna"
+DEFAULT_HOST = "http://127.0.0.1:11434"
+DEFAULT_MODEL = "qwen3:4b-instruct"
+REQUEST_TIMEOUT = 60.0  # seconds; the first call may load the model
 MAX_TASKS = 3
 
 Role = Literal["engineering", "science", "security"]
@@ -46,13 +48,12 @@ class InterpretedTask(BaseModel):
 
 
 class Interpretation(BaseModel):
-    """Strict schema for the model response (Structured Outputs)."""
+    """Strict schema for the model response (Ollama structured output)."""
 
     tasks: list[InterpretedTask]
     message: str | None
 
-    # Enforced here rather than as JSON-schema maxItems, which strict
-    # Structured Outputs may not accept.
+    # Enforced here as well as by the prompt; the model is not trusted.
     @field_validator("tasks")
     @classmethod
     def _limit_tasks(cls, tasks: list[InterpretedTask]):
@@ -124,59 +125,61 @@ def validate_tasks(tasks: list[InterpretedTask]) -> None:
             )
 
 
-def _api_key() -> str | None:
-    key = (os.environ.get("OPENAI_API_KEY") or "").strip()
-    # The .env.example placeholder is not a usable key.
-    if not key or key == "your_api_key_here":
-        return None
-    return key
+def _host() -> str:
+    return (os.environ.get("OLLAMA_HOST") or "").strip() or DEFAULT_HOST
 
 
-def is_configured() -> bool:
-    return _api_key() is not None
+def _model() -> str:
+    return (os.environ.get("OLLAMA_MODEL") or "").strip() or DEFAULT_MODEL
 
 
-def interpret(command: str, client: OpenAI | None = None) -> Interpretation:
+_UNAVAILABLE = "Natural-language command interface unavailable."
+
+
+def interpret(command: str, client: ollama.Client | None = None) -> Interpretation:
     """Turn a player command into validated tasks. Never touches game state.
 
-    `client` is injectable for tests; otherwise one is built from the env key.
+    Each call is independent (no history). `client` is injectable for tests.
     Raises InterpreterError with a player-safe message on any failure.
     """
+    model = _model()
     if client is None:
-        key = _api_key()
-        if key is None:
-            raise InterpreterError(
-                "Natural-language command interface unavailable. "
-                "OpenAI API key not configured.",
-                503,
-            )
-        client = OpenAI(api_key=key, timeout=20.0, max_retries=1)
+        client = ollama.Client(host=_host(), timeout=REQUEST_TIMEOUT)
 
     try:
-        response = client.responses.parse(
-            model=MODEL,
-            instructions=INSTRUCTIONS,
-            input=command,
-            text_format=Interpretation,
-            store=False,
+        response = client.chat(
+            model=model,
+            messages=[
+                {"role": "system", "content": INSTRUCTIONS},
+                {"role": "user", "content": command},
+            ],
+            format=Interpretation.model_json_schema(),
+            options={"temperature": 0},
         )
-        result = response.output_parsed
+        return Interpretation.model_validate_json(response.message.content or "")
     except ValidationError:
         logger.warning("Interpreter response failed schema validation")
         raise InterpreterError(
             "Command could not be interpreted. Please rephrase and retry.", 502
         ) from None
+    except ollama.ResponseError as exc:
+        logger.warning("Ollama error (status %s)", exc.status_code)
+        if exc.status_code == 404:
+            raise InterpreterError(
+                f"{_UNAVAILABLE} Local model is not installed.", 503
+            ) from None
+        raise InterpreterError(
+            "Command interpretation is temporarily unavailable. Please retry.",
+            502,
+        ) from None
+    except (ConnectionError, OSError):
+        logger.warning("Ollama server is not reachable at %s", _host())
+        raise InterpreterError(
+            f"{_UNAVAILABLE} Local model is not running.", 503
+        ) from None
     except Exception as exc:
-        # Log only the type: exception text/headers must not leak secrets.
         logger.warning("Interpreter request failed: %s", type(exc).__name__)
         raise InterpreterError(
             "Command interpretation is temporarily unavailable. Please retry.",
             502,
         ) from None
-
-    if result is None:
-        logger.warning("Interpreter returned no parsed output")
-        raise InterpreterError(
-            "Command could not be interpreted. Please rephrase and retry.", 502
-        )
-    return result
