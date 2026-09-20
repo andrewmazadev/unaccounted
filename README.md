@@ -90,7 +90,9 @@ The Final Incident Finding therefore requires the player to:
 3. Submit the finding
 4. Receive deterministic evaluation
 
-The evaluation is plain server-side logic with no AI involved. The answer key never leaves the backend.
+The evaluation is plain server-side logic with no AI involved. The canonical evaluation rules live only in the backend, and the initial case payload sent to the client contains only the question and the answer choices, not the complete answer key. Feedback on a submitted finding does reveal whether it was supported, and may indicate which evidence is missing.
+
+The vertical slice uses evidence IDs E-01, E-02, E-03 and E-06 because it intentionally includes only part of the larger Case 037 evidence set.
 
 ## Tech Stack
 
@@ -147,9 +149,17 @@ npm install
 npm run dev
 ```
 
-The app runs at http://localhost:3000. It talks to the backend at `http://localhost:8000` by default; set `NEXT_PUBLIC_API_URL` (browser) and `API_URL` (server-side rendering) to point elsewhere. The backend's CORS policy allows only `http://localhost:3000`.
+The app runs at http://localhost:3000 (http://127.0.0.1:3000 also works). It talks to the backend at `http://localhost:8000` by default; set `NEXT_PUBLIC_API_URL` (browser) and `API_URL` (server-side rendering) to point elsewhere. The backend's CORS policy allows only `http://localhost:3000` and `http://127.0.0.1:3000`.
 
 Start the backend before loading the frontend. The page shows a connection-failure notice if the API is unreachable.
+
+## Demo Preparation
+
+- **Start Ollama first.** Natural-language commands need the local Ollama server running.
+- **Warm the model before a live demo:** `ollama run qwen3:4b-instruct "hello"`. Ollama unloads idle models after a few minutes, so the first request after that may be slow; if it times out, retry.
+- **Manual investigation works without Ollama.** The manual controls use no AI; only the command box needs the model.
+- **Click Reset case before a fresh demo.** Mission state lives in backend memory until you reset it or restart the backend.
+- **Open the app at `http://localhost:3000` or `http://127.0.0.1:3000`.** Other origins are blocked by the backend's CORS policy.
 
 ## Running the Demo
 
@@ -161,7 +171,7 @@ Start the backend before loading the frontend. The page shows a connection-failu
    `Engineering, inspect the reactor while Science reconstructs the accident.`
 
 5. Observe the ENG and SCI task interpretation.
-6. Evidence **E-01** and **E-03** is recovered.
+6. Evidence **E-01** and **E-03** are recovered.
 7. Use the manual controls to run **Analyze heat-rejection system** and recover **E-02**.
 8. Once the evidence threshold is reached, select **Open final finding**.
 9. Choose the supported abandonment conclusion.
