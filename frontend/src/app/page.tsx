@@ -1,17 +1,30 @@
-import { getCase, type CaseData } from "@/lib/api";
+import {
+  getCase,
+  getEvidence,
+  getState,
+  type CaseData,
+  type Evidence,
+  type MissionState,
+} from "@/lib/api";
 import CaseFile from "./case-file";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
   let caseData: CaseData | null = null;
+  let state: MissionState | null = null;
+  let evidence: Evidence[] = [];
   try {
-    caseData = await getCase();
+    [caseData, state, evidence] = await Promise.all([
+      getCase(),
+      getState(),
+      getEvidence(),
+    ]);
   } catch {
     // fall through to the offline notice
   }
 
-  if (!caseData) {
+  if (!caseData || !state) {
     return (
       <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-16">
         <p className="font-mono text-xs uppercase tracking-[0.25em] text-zinc-500">
@@ -24,5 +37,7 @@ export default async function Home() {
     );
   }
 
-  return <CaseFile data={caseData} />;
+  return (
+    <CaseFile data={caseData} initialState={state} initialEvidence={evidence} />
+  );
 }

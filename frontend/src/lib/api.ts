@@ -1,4 +1,41 @@
-const API_URL = process.env.API_URL ?? "http://localhost:8000";
+// Server components use API_URL; the browser needs NEXT_PUBLIC_API_URL.
+const API_URL =
+  (typeof window === "undefined"
+    ? process.env.API_URL
+    : process.env.NEXT_PUBLIC_API_URL) ?? "http://localhost:8000";
+
+export type LocationAction = { id: string; label: string };
+
+export type Location = {
+  id: string;
+  name: string;
+  functional: boolean;
+  actions: LocationAction[];
+};
+
+export type LogEntry = { message: string; location: string | null };
+
+export type MissionState = {
+  discovered_evidence: string[];
+  completed_tasks: string[];
+  event_log: LogEntry[];
+  reactor_decision: string | null;
+  mission_complete: boolean;
+};
+
+export type Evidence = {
+  id: string;
+  name: string;
+  location: string;
+  reliability: string;
+  finding: string;
+};
+
+export type InvestigateResult = {
+  action: string;
+  evidence: Evidence;
+  state: MissionState;
+};
 
 export type CaseData = {
   id: string;
@@ -19,7 +56,7 @@ export type CaseData = {
     lifeboats: Record<string, string>;
   };
   objectives: { id: string; text: string }[];
-  locations: { id: string; name: string; functional: boolean }[];
+  locations: Location[];
   non_playable_areas: {
     id: string;
     name: string;
@@ -34,3 +71,32 @@ export async function getCase(): Promise<CaseData> {
   if (!res.ok) throw new Error(`GET /case failed: ${res.status}`);
   return res.json();
 }
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, { cache: "no-store", ...init });
+  if (!res.ok) {
+    let detail = `${init?.method ?? "GET"} ${path} failed: ${res.status}`;
+    try {
+      const body = await res.json();
+      if (typeof body.detail === "string") detail = body.detail;
+    } catch {
+      // keep the generic message
+    }
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
+export const getState = () => request<MissionState>("/state");
+
+export const getEvidence = () => request<Evidence[]>("/evidence");
+
+export const resetCase = () =>
+  request<MissionState>("/reset", { method: "POST" });
+
+export const investigate = (action: string) =>
+  request<InvestigateResult>("/investigate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action }),
+  });

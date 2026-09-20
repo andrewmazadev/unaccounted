@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { CaseData } from "@/lib/api";
+import type { CaseData, Evidence, MissionState } from "@/lib/api";
+import MissionControl from "./mission-control";
 
 const label = "font-mono text-[11px] uppercase tracking-[0.25em] text-zinc-500";
 
@@ -19,38 +20,25 @@ function Header({ data }: { data: CaseData }) {
   );
 }
 
-function Row({ k, v }: { k: string; v: string }) {
-  return (
-    <div className="flex justify-between gap-4 border-b border-zinc-900 py-2">
-      <dt className={label}>{k}</dt>
-      <dd className="font-mono text-sm uppercase text-zinc-200">{v}</dd>
-    </div>
-  );
-}
-
-export default function CaseFile({ data }: { data: CaseData }) {
+export default function CaseFile({
+  data,
+  initialState,
+  initialEvidence,
+}: {
+  data: CaseData;
+  initialState: MissionState;
+  initialEvidence: Evidence[];
+}) {
   const [began, setBegan] = useState(false);
   const s = data.initial_state;
 
   if (began) {
     return (
-      <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
-        <p className={label}>UNACCOUNTED</p>
-        <p className="mt-1 font-mono text-sm uppercase tracking-wider text-zinc-400">
-          CASE {data.id} / {data.vessel}
-        </p>
-        <h1 className="mt-8 text-2xl font-semibold tracking-wide text-zinc-100">
-          MISSION CONTROL
-        </h1>
-        <dl className="mt-6 border-t border-zinc-800">
-          <Row k="Primary reactor" v={s.primary_reactor} />
-          <Row k="Auxiliary reserve" v={`${s.auxiliary_reserve_pct}%`} />
-          <Row k="Life signs" v={s.life_signs} />
-        </dl>
-        <p className="mt-8 font-mono text-xs uppercase tracking-[0.25em] text-emerald-600">
-          Mission systems connected.
-        </p>
-      </main>
+      <MissionControl
+        data={data}
+        initialState={initialState}
+        initialEvidence={initialEvidence}
+      />
     );
   }
 

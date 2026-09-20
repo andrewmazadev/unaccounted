@@ -45,5 +45,61 @@
       "status": "depressurized / sealed",
       "access": "prohibited"
     }
-  ]
+  ],
+  "actions": {
+    "inspect_reactor": {
+      "location": "engineering",
+      "label": "Inspect reactor shutdown records",
+      "evidence_id": "E-01",
+      "log": "Reactor shutdown records recovered."
+    },
+    "inspect_thermal_system": {
+      "location": "engineering",
+      "label": "Analyze heat-rejection system",
+      "evidence_id": "E-02",
+      "log": "Heat-rejection system analysis completed."
+    },
+    "analyze_environmental_logs": {
+      "location": "research",
+      "label": "Analyze environmental and navigation logs",
+      "evidence_id": "E-03",
+      "log": "Environmental and navigation logs recovered."
+    },
+    "inspect_lifeboats": {
+      "location": "boarding_airlock",
+      "label": "Inspect lifeboat systems and launch telemetry",
+      "evidence_id": "E-06",
+      "log": "Lifeboat manifest and launch telemetry recovered."
+    }
+  },
+  "evidence": {
+    "E-01": {
+      "id": "E-01",
+      "name": "Reactor SCRAM Record",
+      "location": "engineering",
+      "reliability": "Verified",
+      "finding": "Chief Engineer Tomas Varga manually initiated the reactor shutdown after Impact Event 01.\n\nThe record establishes that the reactor shutdown was deliberate, but does not by itself establish whether it was appropriate."
+    },
+    "E-02": {
+      "id": "E-02",
+      "name": "Heat-Rejection System Failure Analysis",
+      "location": "engineering",
+      "reliability": "Verified",
+      "finding": "Impact Event 01 damaged external coolant manifolds and multiple radiator sections.\n\nThe protected internal primary coolant circuit remained intact.\n\nRemaining external heat-rejection capacity was insufficient for safe sustained reactor operation.\n\nSafe reactor restart was not possible."
+    },
+    "E-03": {
+      "id": "E-03",
+      "name": "Environmental Impact and Navigation Record",
+      "location": "research",
+      "reliability": "Verified",
+      "finding": "Impact Event 01 occurred while the crew was aboard and damaged primary communications and the external heat-rejection system.\n\nBefore evacuation, Navigation identified a second high-density debris concentration. Petrel's ballistic trajectory would intersect it approximately nine hours after Impact Event 01.\n\nPetrel could not maneuver clear. The lifeboats could.\n\nImpact Event 02 occurred after the crew evacuated and breached the Aft Survey Bay.\n\nThis evidence establishes cause, chronology, and the rationale behind evacuation."
+    },
+    "E-06": {
+      "id": "E-06",
+      "name": "Lifeboat Manifest and Launch Telemetry",
+      "location": "boarding_airlock",
+      "reliability": "Verified",
+      "finding": "27 personnel were verified aboard three lifeboats.\n\nLifeboat 01: 9\nLifeboat 02: 9\nLifeboat 03: 9\n\nAll three successfully separated from Petrel. Initial course changes were confirmed.\n\nThis establishes that all registered personnel left Petrel alive. It does NOT establish their later fate."
+    }
+  }
 }
