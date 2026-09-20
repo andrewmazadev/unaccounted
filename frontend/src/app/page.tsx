@@ -27,7 +27,7 @@ export default async function Home() {
   if (!caseData || !state) {
     return (
       <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-16">
-        <p className="font-mono text-xs uppercase tracking-[0.25em] text-zinc-500">
+        <p className="font-mono text-xs uppercase tracking-[0.25em] text-zinc-400">
           Connection failure
         </p>
         <p className="mt-3 text-zinc-300">
