@@ -1,8 +1,22 @@
+from typing import get_args
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 import game
-from models import Evidence, InvestigateRequest, InvestigateResponse, MissionState
+import interpreter
+from models import (
+    CommandRequest,
+    CommandResponse,
+    Evidence,
+    InvestigateRequest,
+    InvestigateResponse,
+    MissionState,
+)
+
+# The interpreter's action enum must stay in lockstep with the game's actions.
+assert set(get_args(interpreter.Action)) == set(game.ACTIONS)
+assert set().union(*interpreter.ROLE_ACTIONS.values()) == set(game.ACTIONS)
 
 app = FastAPI(title="Unaccounted API")
 
@@ -52,6 +66,52 @@ def investigate(req: InvestigateRequest):
     evidence = game.investigate(req.action)
     return InvestigateResponse(
         action=req.action, evidence=evidence, state=game.state
+    )
+
+
+@app.post("/command", response_model=CommandResponse)
+def command(req: CommandRequest):
+    """Interpret a natural-language command, then run the resulting tasks.
+
+    The model only picks from the allowed actions; evidence and state changes
+    come exclusively from game.investigate().
+    """
+    text = req.command.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Command is empty.")
+
+    # Interpretation happens first and never touches state, so any failure
+    # here leaves the mission unchanged.
+    try:
+        interpretation = interpreter.interpret(text)
+    except interpreter.InterpreterError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+
+    # Validate every role/action pairing and action before executing any
+    # task, so an invalid one leaves the mission completely unchanged.
+    try:
+        interpreter.validate_tasks(interpretation.tasks)
+    except interpreter.InterpreterError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+
+    tasks, seen = [], set()
+    for t in interpretation.tasks:
+        if t.action not in seen:
+            seen.add(t.action)
+            tasks.append(t)
+    if any(t.action not in game.ACTIONS for t in tasks):
+        raise HTTPException(
+            status_code=502,
+            detail="Command could not be interpreted. Please rephrase and retry.",
+        )
+
+    evidence = [game.investigate(t.action) for t in tasks]
+    return CommandResponse(
+        command=text,
+        tasks=tasks,
+        message=interpretation.message,
+        evidence=evidence,
+        state=game.state,
     )
 
 

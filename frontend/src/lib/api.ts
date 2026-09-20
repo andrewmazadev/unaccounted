@@ -100,3 +100,24 @@ export const investigate = (action: string) =>
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action }),
   });
+
+export type InterpretedTask = {
+  role: "engineering" | "science" | "security";
+  action: string;
+  reason: string;
+};
+
+export type CommandResult = {
+  command: string;
+  tasks: InterpretedTask[];
+  message: string | null;
+  evidence: Evidence[];
+  state: MissionState;
+};
+
+export const sendCommand = (command: string) =>
+  request<CommandResult>("/command", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ command }),
+  });

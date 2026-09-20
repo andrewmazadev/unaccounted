@@ -4,12 +4,22 @@ import { useState } from "react";
 import {
   investigate,
   resetCase,
+  sendCommand,
   type CaseData,
   type Evidence,
+  type InterpretedTask,
   type MissionState,
 } from "@/lib/api";
 
 const label = "font-mono text-[11px] uppercase tracking-[0.25em] text-zinc-500";
+
+const ROLE_TAG: Record<InterpretedTask["role"], string> = {
+  engineering: "ENG",
+  science: "SCI",
+  security: "SEC",
+};
+
+type Interpretation = { tasks: InterpretedTask[]; message: string | null };
 
 export default function MissionControl({
   data,
@@ -27,6 +37,12 @@ export default function MissionControl({
   const [selectedId, setSelectedId] = useState("engineering");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [command, setCommand] = useState("");
+  const [interpreting, setInterpreting] = useState(false);
+  const [commandError, setCommandError] = useState<string | null>(null);
+  const [interpretation, setInterpretation] = useState<Interpretation | null>(
+    null,
+  );
 
   const locationName = (id: string | null) =>
     data.locations.find((l) => l.id === id)?.name ?? id ?? "SYSTEM";
@@ -58,6 +74,7 @@ export default function MissionControl({
       (r) => {
         setState(r.state);
         setEvidenceById((prev) => ({ ...prev, [r.evidence.id]: r.evidence }));
+        setCommandError(null);
       },
     );
 
@@ -65,7 +82,36 @@ export default function MissionControl({
     run(resetCase, (s) => {
       setState(s);
       setEvidenceById({});
+      setInterpretation(null);
+      setCommandError(null);
     });
+
+  async function submitCommand(e: React.FormEvent) {
+    e.preventDefault();
+    const text = command.trim();
+    if (!text || busy) return;
+    setBusy(true);
+    setInterpreting(true);
+    setCommandError(null);
+    try {
+      const r = await sendCommand(text);
+      setState(r.state);
+      setEvidenceById((prev) => ({
+        ...prev,
+        ...Object.fromEntries(r.evidence.map((ev) => [ev.id, ev])),
+      }));
+      setInterpretation({ tasks: r.tasks, message: r.message });
+      setCommand("");
+    } catch (err) {
+      // Keep the typed command so the player can retry.
+      setCommandError(
+        err instanceof Error ? err.message : "Backend unreachable.",
+      );
+    } finally {
+      setInterpreting(false);
+      setBusy(false);
+    }
+  }
 
   const recovered = state.discovered_evidence
     .map((id) => evidenceById[id])
@@ -149,7 +195,7 @@ export default function MissionControl({
           </ul>
         </nav>
 
-        <main className="p-8">
+        <main className="flex flex-col p-8">
           <p className={label}>Selected location</p>
           <h2 className="mt-2 text-2xl font-semibold tracking-wide text-zinc-100">
             {selected.name.toUpperCase()}
@@ -198,6 +244,74 @@ export default function MissionControl({
               Core investigation evidence recovered
             </p>
           )}
+
+          <section aria-label="Command SIG team" className="mt-auto pt-12">
+            {interpretation && (
+              <div className="mb-4 border border-zinc-800 px-4 py-3">
+                <p className={label}>Command interpreted</p>
+                {interpretation.tasks.length > 0 && (
+                  <ul className="mt-3 space-y-2">
+                    {interpretation.tasks.map((t) => (
+                      <li key={t.action}>
+                        <p className="text-sm text-zinc-200">
+                          <span className="mr-2 font-mono text-xs tracking-[0.2em] text-emerald-600">
+                            {ROLE_TAG[t.role]} →
+                          </span>
+                          {allActions.find((a) => a.id === t.action)?.label ??
+                            t.action}
+                        </p>
+                        <p className="ml-12 mt-0.5 text-xs text-zinc-500">
+                          {t.reason}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {interpretation.message && (
+                  <p className="mt-3 text-sm text-zinc-400">
+                    {interpretation.message}
+                  </p>
+                )}
+                {interpretation.tasks.length === 0 &&
+                  !interpretation.message && (
+                    <p className="mt-3 text-sm text-zinc-500">
+                      No executable tasks.
+                    </p>
+                  )}
+              </div>
+            )}
+            <form onSubmit={submitCommand} className="flex gap-2">
+              <input
+                value={command}
+                onChange={(e) => setCommand(e.target.value)}
+                disabled={busy}
+                maxLength={500}
+                aria-label="Command SIG team"
+                placeholder="Command SIG team..."
+                className="min-w-0 flex-1 border border-zinc-600 bg-zinc-950 px-4 py-3 font-mono text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-300 focus:outline-none disabled:opacity-50"
+              />
+              <button
+                type="submit"
+                disabled={busy || !command.trim()}
+                className="border border-zinc-500 px-5 py-3 font-mono text-xs uppercase tracking-[0.25em] text-zinc-100 transition-colors hover:border-zinc-200 hover:bg-zinc-900 disabled:opacity-40"
+              >
+                Execute
+              </button>
+            </form>
+            {interpreting && (
+              <p
+                role="status"
+                className="mt-2 font-mono text-xs uppercase tracking-[0.2em] text-zinc-400"
+              >
+                Interpreting command...
+              </p>
+            )}
+            {commandError && (
+              <p role="alert" className="mt-2 font-mono text-xs text-red-500">
+                {commandError}
+              </p>
+            )}
+          </section>
         </main>
 
         <aside aria-label="Activity feed" className="p-4">

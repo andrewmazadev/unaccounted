@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 
+from interpreter import InterpretedTask
+
 
 class LogEntry(BaseModel):
     message: str
@@ -29,4 +31,16 @@ class InvestigateRequest(BaseModel):
 class InvestigateResponse(BaseModel):
     action: str
     evidence: Evidence
+    state: MissionState
+
+
+class CommandRequest(BaseModel):
+    command: str = Field(min_length=1, max_length=500)
+
+
+class CommandResponse(BaseModel):
+    command: str
+    tasks: list[InterpretedTask]
+    message: str | None
+    evidence: list[Evidence]
     state: MissionState
