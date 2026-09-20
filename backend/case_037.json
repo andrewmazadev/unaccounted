@@ -1,0 +1,49 @@
+{
+  "id": "037",
+  "vessel": "SNV Petrel",
+  "vessel_type": "Environmental and Deep-Space Survey Vessel",
+  "crew_registered": 27,
+  "initial_state": {
+    "primary_reactor": "offline",
+    "auxiliary_reserve_pct": 54,
+    "core_atmosphere": "stable",
+    "life_support": "nominal",
+    "living_quarters": "pressurized / standby",
+    "aft_survey_bay": "depressurized / sealed",
+    "main_propulsion": "unavailable",
+    "life_signs": "none detected",
+    "primary_communications": "offline",
+    "emergency_communications": "inactive",
+    "lifeboats": {
+      "01": "absent",
+      "02": "absent",
+      "03": "absent",
+      "04": "docked"
+    }
+  },
+  "objectives": [
+    { "id": "obj_personnel", "text": "Determine the status of the 27 registered personnel" },
+    { "id": "obj_abandonment", "text": "Determine why Petrel was abandoned" },
+    { "id": "obj_failures", "text": "Establish the cause and sequence of the vessel's failures" },
+    { "id": "obj_hazard", "text": "Determine whether the vessel presents a continuing hazard" },
+    { "id": "obj_evidence", "text": "Preserve evidence where feasible" }
+  ],
+  "locations": [
+    { "id": "bridge", "name": "Bridge", "functional": false },
+    { "id": "central_operations", "name": "Central Operations", "functional": false },
+    { "id": "medical", "name": "Medical", "functional": false },
+    { "id": "research", "name": "Research", "functional": true },
+    { "id": "engineering", "name": "Engineering", "functional": true },
+    { "id": "boarding_airlock", "name": "Boarding Airlock", "functional": true },
+    { "id": "living_quarters", "name": "Living Quarters", "functional": false }
+  ],
+  "non_playable_areas": [
+    {
+      "id": "aft_survey_bay",
+      "name": "Aft Survey Bay",
+      "branches_from": "research",
+      "status": "depressurized / sealed",
+      "access": "prohibited"
+    }
+  ]
+}
